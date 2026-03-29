@@ -24,16 +24,16 @@ provider "admiral" {
   # token = "..."               # or set ADMIRAL_TOKEN env var
 }
 
-resource "admiral_application" "example" {
+resource "admiral_application" "my_app" {
   name        = "my-app"
-  description = "Managed by Terraform"
+  description = "My application"
 
   labels = {
     team = "platform"
   }
 }
 
-data "admiral_application" "existing" {
+data "admiral_application" "other_app" {
   name = "other-app"
 }
 ```
