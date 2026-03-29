@@ -1,0 +1,58 @@
+name: Tag Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Release type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Create Release Tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Install svu
+        run: |
+          go install github.com/caarlos0/svu@latest
+
+      - name: Calculate next version
+        id: version
+        run: |
+          case "${{ inputs.release_type }}" in
+            major)
+              NEXT=$(svu major)
+              ;;
+            minor)
+              NEXT=$(svu minor)
+              ;;
+            patch)
+              NEXT=$(svu next)
+              ;;
+          esac
+          CURRENT=$(svu current)
+          echo "current=${CURRENT}" >> $GITHUB_OUTPUT
+          echo "next=${NEXT}" >> $GITHUB_OUTPUT
+          echo "Current: ${CURRENT} → Next: ${NEXT}"
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.next }}" -m "Release ${{ steps.version.outputs.next }}"
+          git push origin "${{ steps.version.outputs.next }}"
+          echo "### Tagged ${{ steps.version.outputs.next }}" >> $GITHUB_STEP_SUMMARY
+          echo "This will trigger the [Release workflow](../actions/workflows/release.yml)." >> $GITHUB_STEP_SUMMARY
