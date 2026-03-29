@@ -8,6 +8,9 @@ on:
 permissions:
   contents: write
 
+env:
+  GOPRIVATE: "go.admiral.io/*"
+
 jobs:
   goreleaser:
     name: GoReleaser
