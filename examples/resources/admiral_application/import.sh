@@ -1,1 +1,1 @@
-terraform import admiral_application.example <application-uuid>
+terraform import admiral_application.example '<application-uuid>'
