@@ -13,7 +13,7 @@ The Admiral Terraform provider allows you to manage [Admiral](https://admiral.io
 terraform {
   required_providers {
     admiral = {
-      source  = "admiral/admiral"
+      source  = "admiral-io/admiral"
       version = "~> 1"
     }
   }
@@ -51,7 +51,7 @@ export ADMIRAL_TOKEN="your-api-token"
 
 ## Documentation
 
-Full provider documentation is available on the [Terraform Registry](https://registry.terraform.io/providers/admiral/admiral/latest/docs).
+Full provider documentation is available on the [Terraform Registry](https://registry.terraform.io/providers/admiral-io/admiral/latest/docs).
 
 ## Developing the Provider
 

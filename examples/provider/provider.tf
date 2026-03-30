@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     admiral = {
-      source  = "admiral/admiral"
+      source  = "admiral-io/admiral"
       version = "~> 1"
     }
   }
