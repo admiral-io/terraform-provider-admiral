@@ -52,7 +52,7 @@ jobs:
               NEXT=$(svu minor)
               ;;
             patch)
-              NEXT=$(svu next)
+              NEXT=$(svu patch)
               ;;
           esac
           CURRENT=$(svu current)
