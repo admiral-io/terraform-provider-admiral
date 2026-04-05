@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"go.admiral.io/sdk/client"
-	applicationv1 "go.admiral.io/sdk/proto/admiral/api/application/v1"
+	applicationv1 "go.admiral.io/sdk/proto/admiral/application/v1"
 )
 
 var (

@@ -24,3 +24,4 @@ terraform-provider-admiral
 build
 .claude
 .idea
+tmp
