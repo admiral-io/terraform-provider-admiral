@@ -1,3 +1,5 @@
+> **Warning:** This project is currently under heavy development and is not considered stable yet. There may be bugs or unexpected behavior, and we don't recommend using it in production.
+
 # Terraform Provider for Admiral
 
 The Admiral Terraform provider allows you to manage [Admiral](https://admiral.io) platform resources using infrastructure as code.
