@@ -22,8 +22,8 @@ terraform {
 }
 
 provider "admiral" {
-  # host  = "api.admiral.io"    # optional, defaults to api.admiral.io:443
-  # token = "..."               # or set ADMIRAL_TOKEN env var
+  # server  = "api.admiral.io:443"  # optional; or set ADMIRAL_SERVER
+  # api_key = "admp_..."            # or set ADMIRAL_API_KEY (recommended)
 }
 
 resource "admiral_application" "my_app" {
@@ -42,14 +42,20 @@ data "admiral_application" "other_app" {
 
 ## Authentication
 
-The provider requires an Admiral API token. You can provide it in one of two ways:
+The provider authenticates with an Admiral API key. Provide it in one of two ways:
 
-- Set the `ADMIRAL_TOKEN` environment variable (recommended)
-- Set the `token` attribute in the provider configuration block
+- Set the `ADMIRAL_API_KEY` environment variable (recommended)
+- Set the `api_key` attribute in the provider configuration block
 
 ```shell
-export ADMIRAL_TOKEN="your-api-token"
+export ADMIRAL_API_KEY="admp_..."
 ```
+
+Create a key with the [Admiral CLI](https://github.com/admiral-io/admiral-cli) or in the console.
+
+### Connecting to a local server
+
+`server` accepts any `host:port`. Against a local development server, set `plaintext = true` to skip TLS entirely, or `insecure = true` to use TLS without verifying the certificate. Neither is appropriate for `api.admiral.io`.
 
 ## Documentation
 
@@ -74,7 +80,7 @@ make test
 Acceptance tests run against a real Admiral instance and require valid credentials.
 
 ```shell
-export ADMIRAL_TOKEN="your-api-token"
+export ADMIRAL_API_KEY="admp_..."
 make testacc
 ```
 

@@ -3,14 +3,16 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"go.admiral.io/sdk/client"
-	applicationv1 "go.admiral.io/sdk/proto/admiral/application/v1"
+	applicationv1 "go.admiral.io/sdk/proto/admiral/api/application/v1"
 )
 
 var (
@@ -122,25 +124,51 @@ func (d *applicationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		}
 		app = result.Application
 	} else {
+		name := config.Name.ValueString()
+		filter, err := filterEq("name", name)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("name"),
+				"Invalid Application Name",
+				err.Error(),
+			)
+			return
+		}
+
+		// Names are not unique server-side, so ask for two: a second match
+		// means the lookup is ambiguous and the caller must pass an ID.
 		result, err := d.client.Application().ListApplications(ctx, &applicationv1.ListApplicationsRequest{
-			Filter:   "field['name'] = '" + config.Name.ValueString() + "'",
-			PageSize: 1,
+			Filter:   filter,
+			PageSize: 2,
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error Reading Application",
-				"Could not find application with name "+config.Name.ValueString()+": "+err.Error(),
+				"Could not find application with name "+name+": "+err.Error(),
 			)
 			return
 		}
-		if len(result.Applications) == 0 {
+		switch len(result.Applications) {
+		case 0:
 			resp.Diagnostics.AddError(
 				"Application Not Found",
-				"No application found with name "+config.Name.ValueString()+".",
+				"No application found with name "+name+".",
+			)
+			return
+		case 1:
+			app = result.Applications[0]
+		default:
+			ids := make([]string, 0, len(result.Applications))
+			for _, a := range result.Applications {
+				ids = append(ids, a.Id)
+			}
+			resp.Diagnostics.AddAttributeError(
+				path.Root("name"),
+				"Ambiguous Application Name",
+				fmt.Sprintf("More than one application is named %q. Set `id` instead; candidates: %s.", name, strings.Join(ids, ", ")),
 			)
 			return
 		}
-		app = result.Applications[0]
 	}
 
 	d.mapApplicationToState(ctx, app, &config, &resp.Diagnostics)

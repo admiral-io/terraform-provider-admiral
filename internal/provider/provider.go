@@ -2,8 +2,10 @@ package provider
 
 import (
 	"context"
+	"crypto/tls"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -11,8 +13,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"google.golang.org/grpc"
 
 	"go.admiral.io/sdk/client"
+)
+
+const (
+	// defaultServer mirrors the CLI's default; see admiral-cli/cmd/root.go.
+	defaultServer = "api.admiral.io:443"
+
+	// defaultTimeout bounds each RPC so a hung API does not hang a plan or
+	// apply. The value matches the CLI's DefaultTimeout.
+	defaultTimeout = 60 * time.Second
+
+	envServer = "ADMIRAL_SERVER"
+	envAPIKey = "ADMIRAL_API_KEY"
 )
 
 var _ provider.Provider = &admiralProvider{}
@@ -22,9 +37,10 @@ type admiralProvider struct {
 }
 
 type admiralProviderModel struct {
-	Host     types.String `tfsdk:"host"`
-	Token    types.String `tfsdk:"token"`
-	Insecure types.Bool   `tfsdk:"insecure"`
+	Server    types.String `tfsdk:"server"`
+	APIKey    types.String `tfsdk:"api_key"`
+	Insecure  types.Bool   `tfsdk:"insecure"`
+	Plaintext types.Bool   `tfsdk:"plaintext"`
 }
 
 func New(version string) func() provider.Provider {
@@ -44,18 +60,22 @@ func (p *admiralProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "The Admiral provider is used to manage [Admiral](https://admiral.io) platform resources.",
 		Attributes: map[string]schema.Attribute{
-			"host": schema.StringAttribute{
+			"server": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "The Admiral API host. Defaults to `api.admiral.io:443`. Can also be set with the `ADMIRAL_HOST` environment variable.",
+				MarkdownDescription: "The Admiral API server as `host:port`. Defaults to `" + defaultServer + "`. Can also be set with the `" + envServer + "` environment variable.",
 			},
-			"token": schema.StringAttribute{
+			"api_key": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
-				MarkdownDescription: "The Admiral API token. Can also be set with the `ADMIRAL_TOKEN` environment variable.",
+				MarkdownDescription: "The Admiral API key. Can also be set with the `" + envAPIKey + "` environment variable.",
 			},
 			"insecure": schema.BoolAttribute{
 				Optional:            true,
-				MarkdownDescription: "Disable TLS verification. Defaults to `false`.",
+				MarkdownDescription: "Connect over TLS but do not verify the server certificate. Defaults to `false`.",
+			},
+			"plaintext": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Connect without TLS. The API key travels unencrypted, so only use this against a local server. Defaults to `false`.",
 			},
 		},
 	}
@@ -69,66 +89,88 @@ func (p *admiralProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	// Validate that known values are provided.
-	if config.Host.IsUnknown() {
+	if config.Server.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
-			path.Root("host"),
-			"Unknown Admiral API Host",
-			"The provider cannot create the Admiral API client as there is an unknown configuration value for the host. "+
-				"Either target apply the source of the value first, set the value statically in the configuration, or use the ADMIRAL_HOST environment variable.",
+			path.Root("server"),
+			"Unknown Admiral API Server",
+			"The provider cannot create the Admiral API client as there is an unknown configuration value for the server. "+
+				"Either target apply the source of the value first, set the value statically in the configuration, or use the "+envServer+" environment variable.",
 		)
 	}
-	if config.Token.IsUnknown() {
+	if config.APIKey.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
-			path.Root("token"),
-			"Unknown Admiral API Token",
-			"The provider cannot create the Admiral API client as there is an unknown configuration value for the token. "+
-				"Either target apply the source of the value first, set the value statically in the configuration, or use the ADMIRAL_TOKEN environment variable.",
+			path.Root("api_key"),
+			"Unknown Admiral API Key",
+			"The provider cannot create the Admiral API client as there is an unknown configuration value for the API key. "+
+				"Either target apply the source of the value first, set the value statically in the configuration, or use the "+envAPIKey+" environment variable.",
 		)
 	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Resolve host.
-	host := "api.admiral.io:443"
-	if !config.Host.IsNull() {
-		host = config.Host.ValueString()
-	} else if v := os.Getenv("ADMIRAL_HOST"); v != "" {
-		host = v
+	// Resolve server.
+	server := defaultServer
+	if !config.Server.IsNull() {
+		server = config.Server.ValueString()
+	} else if v := os.Getenv(envServer); v != "" {
+		server = v
 	}
 
 	// Default to port 443 if no port is specified.
-	if !strings.Contains(host, ":") {
-		host += ":443"
+	if !strings.Contains(server, ":") {
+		server += ":443"
 	}
 
-	// Resolve token.
-	token := os.Getenv("ADMIRAL_TOKEN")
-	if !config.Token.IsNull() {
-		token = config.Token.ValueString()
+	// Resolve API key.
+	apiKey := os.Getenv(envAPIKey)
+	if !config.APIKey.IsNull() {
+		apiKey = config.APIKey.ValueString()
 	}
 
-	if token == "" {
+	if apiKey == "" {
 		resp.Diagnostics.AddAttributeError(
-			path.Root("token"),
-			"Missing Admiral API Token",
-			"The provider requires an Admiral API token. Set the `token` attribute in the provider block or the ADMIRAL_TOKEN environment variable.",
+			path.Root("api_key"),
+			"Missing Admiral API Key",
+			"The provider requires an Admiral API key. Set the `api_key` attribute in the provider block or the "+envAPIKey+" environment variable.",
 		)
 		return
 	}
 
-	// Resolve insecure.
-	insecure := false
-	if !config.Insecure.IsNull() {
-		insecure = config.Insecure.ValueBool()
+	// The SDK checks this too, but here it can point at the attribute.
+	if err := client.ValidateAuthToken(apiKey); err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("api_key"),
+			"Invalid Admiral API Key",
+			"The API key is not in the expected format: "+err.Error(),
+		)
+		return
 	}
 
-	// Create client
+	// Resolve transport. Plaintext and insecure are distinct promises, as
+	// they are in the CLI: plaintext means no TLS at all, insecure means TLS
+	// with the server certificate unverified. The SDK's Insecure flag is the
+	// former; the latter goes through TLSConfig.
+	plaintext := !config.Plaintext.IsNull() && config.Plaintext.ValueBool()
+	insecure := !config.Insecure.IsNull() && config.Insecure.ValueBool()
+
+	var tlsConfig *tls.Config
+	if insecure && !plaintext {
+		tlsConfig = &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true} //nolint:gosec // that is what insecure asks for
+	}
+
+	// Create client. API keys are sent with the Token scheme; Bearer is for
+	// login sessions, which the provider does not support.
 	cfg := client.Config{
-		HostPort:  host,
-		AuthToken: token,
+		HostPort:   server,
+		AuthToken:  apiKey,
+		AuthScheme: client.AuthSchemeToken,
 		ConnectionOptions: client.ConnectionOptions{
-			Insecure: insecure,
+			Insecure:  plaintext,
+			TLSConfig: tlsConfig,
+			DialOptions: []grpc.DialOption{
+				grpc.WithChainUnaryInterceptor(deadlineInterceptor(defaultTimeout)),
+			},
 		},
 	}
 
@@ -154,5 +196,18 @@ func (p *admiralProvider) Resources(_ context.Context) []func() resource.Resourc
 func (p *admiralProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewApplicationDataSource,
+	}
+}
+
+// deadlineInterceptor gives every unary call a deadline unless the caller
+// already set one.
+func deadlineInterceptor(timeout time.Duration) grpc.UnaryClientInterceptor {
+	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		if _, has := ctx.Deadline(); !has && timeout > 0 {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, timeout)
+			defer cancel()
+		}
+		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }

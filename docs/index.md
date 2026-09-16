@@ -24,8 +24,8 @@ terraform {
 }
 
 provider "admiral" {
-  host  = var.admiral_host
-  token = var.admiral_token
+  # server  = "api.admiral.io:443"  # optional; or set ADMIRAL_SERVER
+  # api_key = "admp_..."            # or set ADMIRAL_API_KEY (recommended)
 }
 ```
 
@@ -34,6 +34,7 @@ provider "admiral" {
 
 ### Optional
 
-- `host` (String) The Admiral API host. Defaults to `api.admiral.io:443`. Can also be set with the `ADMIRAL_HOST` environment variable.
-- `insecure` (Boolean) Disable TLS verification. Defaults to `false`.
-- `token` (String, Sensitive) The Admiral API token. Can also be set with the `ADMIRAL_TOKEN` environment variable.
+- `api_key` (String, Sensitive) The Admiral API key. Can also be set with the `ADMIRAL_API_KEY` environment variable.
+- `insecure` (Boolean) Connect over TLS but do not verify the server certificate. Defaults to `false`.
+- `plaintext` (Boolean) Connect without TLS. The API key travels unencrypted, so only use this against a local server. Defaults to `false`.
+- `server` (String) The Admiral API server as `host:port`. Defaults to `api.admiral.io:443`. Can also be set with the `ADMIRAL_SERVER` environment variable.

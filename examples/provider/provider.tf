@@ -8,6 +8,6 @@ terraform {
 }
 
 provider "admiral" {
-  host  = var.admiral_host
-  token = var.admiral_token
+  # server  = "api.admiral.io:443"  # optional; or set ADMIRAL_SERVER
+  # api_key = "admp_..."            # or set ADMIRAL_API_KEY (recommended)
 }

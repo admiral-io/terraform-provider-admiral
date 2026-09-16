@@ -11,9 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"go.admiral.io/sdk/client"
-	applicationv1 "go.admiral.io/sdk/proto/admiral/application/v1"
+	applicationv1 "go.admiral.io/sdk/proto/admiral/api/application/v1"
 )
 
 var (
@@ -95,12 +98,8 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 
 	// Build request
 	createReq := &applicationv1.CreateApplicationRequest{
-		Name: plan.Name.ValueString(),
-	}
-
-	if !plan.Description.IsNull() {
-		desc := plan.Description.ValueString()
-		createReq.Description = &desc
+		Name:        plan.Name.ValueString(),
+		Description: plan.Description.ValueString(),
 	}
 
 	if !plan.Labels.IsNull() {
@@ -142,6 +141,10 @@ func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest
 		ApplicationId: state.ID.ValueString(),
 	})
 	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Error Reading Application",
 			"Could not read application ID "+state.ID.ValueString()+": "+err.Error(),
@@ -170,14 +173,13 @@ func (r *applicationResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	// Build the application object for the update
+	// The plan is the whole desired state, so every mutable field goes in
+	// the mask: a description or labels removed from the configuration is
+	// cleared on the server rather than left as it was.
 	app := &applicationv1.Application{
-		Id:   state.ID.ValueString(),
-		Name: plan.Name.ValueString(),
-	}
-
-	if !plan.Description.IsNull() {
-		app.Description = plan.Description.ValueString()
+		Id:          state.ID.ValueString(),
+		Name:        plan.Name.ValueString(),
+		Description: plan.Description.ValueString(),
 	}
 
 	if !plan.Labels.IsNull() {
@@ -191,6 +193,7 @@ func (r *applicationResource) Update(ctx context.Context, req resource.UpdateReq
 
 	result, err := r.client.Application().UpdateApplication(ctx, &applicationv1.UpdateApplicationRequest{
 		Application: app,
+		UpdateMask:  &fieldmaskpb.FieldMask{Paths: []string{"name", "description", "labels"}},
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -218,7 +221,7 @@ func (r *applicationResource) Delete(ctx context.Context, req resource.DeleteReq
 	_, err := r.client.Application().DeleteApplication(ctx, &applicationv1.DeleteApplicationRequest{
 		ApplicationId: state.ID.ValueString(),
 	})
-	if err != nil {
+	if err != nil && status.Code(err) != codes.NotFound {
 		resp.Diagnostics.AddError(
 			"Error Deleting Application",
 			"Could not delete application: "+err.Error(),
