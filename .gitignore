@@ -48,3 +48,6 @@ Thumbs.db
 
 # Local scratch
 tmp/
+
+# Claude Code (local only)
+CLAUDE.md
