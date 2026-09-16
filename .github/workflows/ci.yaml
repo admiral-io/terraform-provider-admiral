@@ -88,15 +88,17 @@ jobs:
         run: go build -v ./...
 
   test:
-    name: Test (Terraform ${{ matrix.terraform }})
+    name: Test (Terraform ${{ matrix.terraform.minor }})
     runs-on: blacksmith-4vcpu-ubuntu-2404
     needs: [build]
     strategy:
       fail-fast: false
       matrix:
+        # minor names the job and the artifact (no `*`, which artifact names
+        # reject); constraint is what setup-terraform resolves.
         terraform:
-          - "1.15.*"
-          - "1.16.*"
+          - { minor: "1.15", constraint: "1.15.*" }
+          - { minor: "1.16", constraint: "1.16.*" }
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -115,7 +117,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
-          terraform_version: ${{ matrix.terraform }}
+          terraform_version: ${{ matrix.terraform.constraint }}
           terraform_wrapper: false
       - name: Test
         run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
@@ -123,6 +125,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: coverage-terraform-${{ matrix.terraform }}
+          name: coverage-terraform-${{ matrix.terraform.minor }}
           path: coverage.out
           retention-days: 30
