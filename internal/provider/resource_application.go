@@ -238,17 +238,6 @@ func (r *applicationResource) mapApplicationToState(ctx context.Context, app *ap
 	model.ID = types.StringValue(app.Id)
 	model.Name = types.StringValue(app.Name)
 
-	if app.Description != "" {
-		model.Description = types.StringValue(app.Description)
-	} else {
-		model.Description = types.StringNull()
-	}
-
-	if len(app.Labels) > 0 {
-		labelsMap, d := types.MapValueFrom(ctx, types.StringType, app.Labels)
-		diags.Append(d...)
-		model.Labels = labelsMap
-	} else {
-		model.Labels = types.MapNull(types.StringType)
-	}
+	model.Description = flattenDescription(app.Description, model.Description)
+	model.Labels = flattenLabels(ctx, app.Labels, model.Labels, diags)
 }

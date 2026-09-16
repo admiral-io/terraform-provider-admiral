@@ -90,6 +90,35 @@ func TestAccApplicationResource_labels(t *testing.T) {
 	})
 }
 
+// An explicit `labels = {}` or `description = ""` must round-trip as-is:
+// the framework rejects an apply whose result differs from the plan, and
+// the API returns both as empty.
+func TestAccApplicationResource_emptyValues(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccApplicationResourceConfigEmptyValues("test-app-empty"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("admiral_application.test", "description", ""),
+					resource.TestCheckResourceAttr("admiral_application.test", "labels.%", "0"),
+				),
+			},
+			// Update into the empty shape from a populated one.
+			{
+				Config: testAccApplicationResourceConfigWithLabels("test-app-empty", map[string]string{"env": "staging"}),
+			},
+			{
+				Config: testAccApplicationResourceConfigEmptyValues("test-app-empty"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("admiral_application.test", "description", ""),
+					resource.TestCheckResourceAttr("admiral_application.test", "labels.%", "0"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccApplicationResource_import(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -141,4 +170,14 @@ resource "admiral_application" "test" {
 %[2]s  }
 }
 `, name, labelEntries)
+}
+
+func testAccApplicationResourceConfigEmptyValues(name string) string {
+	return fmt.Sprintf(`
+resource "admiral_application" "test" {
+  name        = %[1]q
+  description = ""
+  labels      = {}
+}
+`, name)
 }

@@ -100,6 +100,33 @@ func TestAccEnvironmentResource_labels(t *testing.T) {
 	})
 }
 
+// See TestAccApplicationResource_emptyValues.
+func TestAccEnvironmentResource_emptyValues(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEnvironmentResourceConfigEmptyValues("test-app-env-empty", "staging"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("admiral_environment.test", "description", ""),
+					resource.TestCheckResourceAttr("admiral_environment.test", "labels.%", "0"),
+				),
+			},
+			// Update into the empty shape from a populated one.
+			{
+				Config: testAccEnvironmentResourceConfigWithLabels("test-app-env-empty", "staging", map[string]string{"env": "staging"}),
+			},
+			{
+				Config: testAccEnvironmentResourceConfigEmptyValues("test-app-env-empty", "staging"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("admiral_environment.test", "description", ""),
+					resource.TestCheckResourceAttr("admiral_environment.test", "labels.%", "0"),
+				),
+			},
+		},
+	})
+}
+
 func testAccEnvironmentResourceConfig(appName, envName, description string) string {
 	desc := ""
 	if description != "" {
@@ -136,4 +163,19 @@ resource "admiral_environment" "test" {
 %[3]s  }
 }
 `, appName, envName, labelEntries)
+}
+
+func testAccEnvironmentResourceConfigEmptyValues(appName, envName string) string {
+	return fmt.Sprintf(`
+resource "admiral_application" "test" {
+  name = %[1]q
+}
+
+resource "admiral_environment" "test" {
+  application_id = admiral_application.test.id
+  name           = %[2]q
+  description    = ""
+  labels         = {}
+}
+`, appName, envName)
 }
