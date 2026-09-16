@@ -33,6 +33,11 @@ resource "admiral_application" "my_app" {
   }
 }
 
+resource "admiral_environment" "production" {
+  application_id = admiral_application.my_app.id
+  name           = "production"
+}
+
 data "admiral_application" "other_app" {
   name = "other-app"
 }

@@ -1,0 +1,1 @@
+terraform import admiral_environment.production '<environment-uuid>'
