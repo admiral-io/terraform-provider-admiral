@@ -1,5 +1,3 @@
-> :warning: This project is currently **under heavy development and is not considered stable yet**. This means that there may be bugs or unexpected behavior, and we don't recommend using it in production.
-
 # Terraform Provider for Admiral
 
 The Admiral Terraform provider allows you to manage [Admiral](https://admiral.io) platform resources using infrastructure as code.
@@ -86,7 +84,7 @@ make testacc
 
 ### Generating Documentation
 
-Documentation is generated from provider schemas and example files using [tfplugindocs](https://github.com/hashicorp/terraform-plugin-docs).
+Documentation is generated from provider schemas and example files using [tfplugindocs](https://github.com/hashicorp/terraform-plugin-docs). It needs a `terraform` binary on `PATH`; CI fails if `docs/` is stale.
 
 ```shell
 make generate
