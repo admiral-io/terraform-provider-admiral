@@ -1,0 +1,128 @@
+# Modelled on admiral-api/.github/workflows/ci.yaml. Deliberate divergences
+# for a Terraform provider:
+#
+#   * No image jobs. The provider ships as binaries through the Terraform
+#     Registry (see release.yaml), not as a container.
+#   * The lint job also checks docs/ freshness. tfplugindocs renders docs/
+#     from the provider schema and examples/, so a schema change alters
+#     generated files nobody edited. It runs through the same make target a
+#     developer would.
+#   * The test job runs against the two most recent Terraform minors.
+#     terraform-plugin-testing drives a real terraform binary, and a new
+#     Terraform release changing plugin-protocol behavior is the one
+#     regression a single pinned version cannot catch. Linux only: the
+#     provider has no OS-specific code and GoReleaser cross-compiles.
+#   * The SDK (go.admiral.io/sdk) is public, so the GitHub App token is not
+#     strictly needed; the step is kept so the shape matches the fleet and
+#     falls back to github.token where the App is not configured.
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Mint GitHub App token
+        id: app-token
+        if: vars.GH_APP_ID != ''
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+      - name: Setup Go
+        uses: admiral-io/.github/actions/setup-go@1589001226c237d1f999296213fa524658d97f8f # master
+        with:
+          github-token: ${{ steps.app-token.outputs.token || github.token }}
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          # Keep in lockstep with GOLANGCI_LINT_VERSION in tools/golangci-lint.sh.
+          version: v2.13.2
+      # golangci-lint's misspell linter covers Go sources; this covers the
+      # Markdown docs with the same US locale.
+      - name: Check spelling in Markdown
+        run: git ls-files -z '*.md' | xargs -0 go run github.com/client9/misspell/cmd/misspell@v0.3.4 -locale US -error
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false
+      - name: Verify generated docs are current
+        run: make generate-verify
+
+  build:
+    name: Build
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs: [lint]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Mint GitHub App token
+        id: app-token
+        if: vars.GH_APP_ID != ''
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+      - name: Setup Go
+        uses: admiral-io/.github/actions/setup-go@1589001226c237d1f999296213fa524658d97f8f # master
+        with:
+          github-token: ${{ steps.app-token.outputs.token || github.token }}
+      - name: Build
+        run: go build -v ./...
+
+  test:
+    name: Test (Terraform ${{ matrix.terraform }})
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs: [build]
+    strategy:
+      fail-fast: false
+      matrix:
+        terraform:
+          - "1.15.*"
+          - "1.16.*"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Mint GitHub App token
+        id: app-token
+        if: vars.GH_APP_ID != ''
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+      - name: Setup Go
+        uses: admiral-io/.github/actions/setup-go@1589001226c237d1f999296213fa524658d97f8f # master
+        with:
+          github-token: ${{ steps.app-token.outputs.token || github.token }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ matrix.terraform }}
+          terraform_wrapper: false
+      - name: Test
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-terraform-${{ matrix.terraform }}
+          path: coverage.out
+          retention-days: 30
