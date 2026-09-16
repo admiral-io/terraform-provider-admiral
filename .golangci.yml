@@ -19,6 +19,9 @@ linters:
     - unparam
     - unused
     - usetesting
+  settings:
+    misspell:
+      locale: US
   exclusions:
     generated: lax
     presets:
@@ -37,7 +40,14 @@ issues:
 
 formatters:
   enable:
+    - gci
     - gofmt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(go.admiral.io,github.com/admiral-io)
   exclusions:
     generated: lax
     paths:

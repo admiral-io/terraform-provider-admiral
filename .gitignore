@@ -1,27 +1,50 @@
-*.dll
-*.exe
-.DS_Store
-example.tf
-terraform.tfplan
-terraform.tfstate
-terraform.tfstate.backup
+# Binaries
 bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries and coverage
+*.test
+*.out
+coverage.html
+
+# Go
+go.work
+go.work.sum
+vendor/
+
+# Build & release artifacts
+build/
 dist/
-modules-dev/
-/pkg/
-website/.vagrant
-website/.bundle
-website/build
-website/node_modules
-.vagrant/
-*.backup
-./*.tfstate
+
+# Terraform state from local runs
+*.tfstate
+*.tfstate.backup
+*.tfplan
 .terraform/
-*.log
-*.bak
+.terraform.lock.hcl
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
 *~
-terraform-provider-admiral
-build
-.claude
-.idea
-tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment & secrets
+.env
+.env.*
+
+# AI
+.claude/
+.cursor/
+
+# Local scratch
+tmp/

@@ -10,7 +10,7 @@ import (
 	"github.com/admiral-io/terraform-provider-admiral/internal/provider"
 )
 
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate -provider-name admiral
+//go:generate go tool tfplugindocs generate -provider-name admiral
 
 var version = "dev"
 

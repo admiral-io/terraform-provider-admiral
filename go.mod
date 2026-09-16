@@ -3,7 +3,6 @@ module github.com/admiral-io/terraform-provider-admiral
 go 1.26.4
 
 require (
-	github.com/hashicorp/terraform-plugin-docs v0.25.0
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-testing v1.16.0
 	go.admiral.io/sdk v1.29.7
@@ -41,6 +40,7 @@ require (
 	github.com/hashicorp/logutils v1.0.0 // indirect
 	github.com/hashicorp/terraform-exec v0.25.3 // indirect
 	github.com/hashicorp/terraform-json v0.28.0 // indirect
+	github.com/hashicorp/terraform-plugin-docs v0.25.0 // indirect
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.40.0 // indirect
 	github.com/huandu/xstrings v1.6.0 // indirect
 	github.com/mattn/go-runewidth v0.0.30 // indirect
@@ -96,3 +96,5 @@ require (
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
 )
+
+tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
