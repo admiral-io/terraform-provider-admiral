@@ -246,17 +246,6 @@ func (r *environmentResource) mapEnvironmentToState(ctx context.Context, env *en
 	model.ApplicationID = types.StringValue(env.ApplicationId)
 	model.Name = types.StringValue(env.Name)
 
-	if env.Description != "" {
-		model.Description = types.StringValue(env.Description)
-	} else {
-		model.Description = types.StringNull()
-	}
-
-	if len(env.Labels) > 0 {
-		labelsMap, d := types.MapValueFrom(ctx, types.StringType, env.Labels)
-		diags.Append(d...)
-		model.Labels = labelsMap
-	} else {
-		model.Labels = types.MapNull(types.StringType)
-	}
+	model.Description = flattenDescription(env.Description, model.Description)
+	model.Labels = flattenLabels(ctx, env.Labels, model.Labels, diags)
 }
