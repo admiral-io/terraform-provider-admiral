@@ -1,6 +1,6 @@
 # Terraform Provider for Admiral
 
-The Admiral Terraform provider allows you to manage [Admiral](https://admiral.io) platform resources using infrastructure as code.
+The Admiral Terraform provider allows you to manage [Admiral](https://admiral.io/?utm_source=github&utm_medium=referral&utm_campaign=terraform-provider-admiral) platform resources using infrastructure as code.
 
 ## Requirements
 
@@ -106,6 +106,16 @@ make lint
 ```shell
 make help
 ```
+
+## Admiral
+
+[Admiral](https://admiral.io/?utm_source=github&utm_medium=referral&utm_campaign=terraform-provider-admiral) is a control plane for coordinating infrastructure and application delivery across environments. This repository is one of its
+[open-source tools](https://github.com/admiral-io).
+
+- [Documentation](https://admiral.io/docs?utm_source=github&utm_medium=referral&utm_campaign=terraform-provider-admiral)
+- A bug in this repository: [open an issue](https://github.com/admiral-io/terraform-provider-admiral/issues/new/choose)
+- Anything else about Admiral, or not sure where it goes: [admiral-community](https://github.com/admiral-io/admiral-community)
+- A security vulnerability: email [security@admiral.io](mailto:security@admiral.io), never a public issue
 
 ## License
 
