@@ -15,8 +15,7 @@ them.
 
 Use this provider to manage the Admiral side of that setup as code: the
 applications your teams own and the environments each one deploys to, such as
-`dev`, `staging` and `production`. The provider works with Terraform and with
-OpenTofu.
+`dev`, `staging` and `production`.
 
 New to the provider? Start with the
 [getting started guide](https://registry.terraform.io/providers/admiral-io/admiral/latest/docs/guides/getting-started).

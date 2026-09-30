@@ -80,7 +80,7 @@ data "admiral_environment" "platform_production" {
 ## Manage an existing application
 
 An application created in the console or with the CLI can be brought under
-Terraform with an `import` block (Terraform 1.5 and later, or OpenTofu). Look
+Terraform with an `import` block (Terraform 1.5 and later). Look
 up its ID with `admiral app get <name> -o wide`, then:
 
 ```terraform
