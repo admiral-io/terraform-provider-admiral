@@ -3,12 +3,12 @@
 page_title: "admiral_application Resource - admiral"
 subcategory: ""
 description: |-
-  Manages an Admiral application.
+  Manages an Admiral application. An application is the unit a team owns, and it holds the environments its components are deployed to.
 ---
 
 # admiral_application (Resource)
 
-Manages an Admiral application.
+Manages an Admiral application. An application is the unit a team owns, and it holds the environments its components are deployed to.
 
 ## Example Usage
 

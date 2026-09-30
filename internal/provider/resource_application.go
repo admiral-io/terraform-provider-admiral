@@ -46,7 +46,7 @@ func (r *applicationResource) Metadata(_ context.Context, req resource.MetadataR
 
 func (r *applicationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manages an Admiral application.",
+		MarkdownDescription: "Manages an Admiral application. An application is the unit a team owns, and it holds the environments its components are deployed to.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,

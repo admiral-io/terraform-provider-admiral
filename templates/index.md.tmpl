@@ -2,17 +2,47 @@
 page_title: "Admiral Provider"
 subcategory: ""
 description: |-
-  The Admiral provider is used to manage Admiral platform resources.
+  Manage Admiral applications and environments as code.
 ---
 
 # Admiral Provider
 
-The Admiral provider is used to interact with the resources supported by [Admiral](https://admiral.io). The provider needs to be configured with the proper credentials before it can be used.
+[Admiral](https://admiral.io/?utm_source=terraform-registry&utm_medium=referral&utm_campaign=terraform-provider-admiral)
+is a control plane for coordinating infrastructure and application delivery
+across environments. It orchestrates the Terraform or OpenTofu, Helm and
+Kubernetes manifests you already have and keeps the dependency graph across
+them.
 
-Use the navigation to the left to read about the available resources and data sources.
+Use this provider to manage the Admiral side of that setup as code: the
+applications your teams own and the environments each one deploys to, such as
+`dev`, `staging` and `production`.
+
+New to the provider? Start with the
+[getting started guide](https://registry.terraform.io/providers/admiral-io/admiral/latest/docs/guides/getting-started).
 
 ## Example Usage
 
 {{ tffile "examples/provider/provider.tf" }}
 
+## Authentication
+
+The provider authenticates with an Admiral API key. Create one in the Admiral
+console or with the [Admiral CLI](https://github.com/admiral-io/admiral-cli),
+then pass it through the environment rather than writing it into
+configuration:
+
+```shell
+export ADMIRAL_API_KEY="admp_..."
+```
+
+The `api_key` argument takes precedence over `ADMIRAL_API_KEY` when both are
+set. The provider connects to `api.admiral.io:443` unless `server` or
+`ADMIRAL_SERVER` names another host.
+
 {{ .SchemaMarkdown | trimspace }}
+
+## Help
+
+- [Admiral documentation](https://admiral.io/docs?utm_source=terraform-registry&utm_medium=referral&utm_campaign=terraform-provider-admiral)
+- A bug in the provider: [open an issue](https://github.com/admiral-io/terraform-provider-admiral/issues/new/choose)
+- Anything else about Admiral: [admiral-community](https://github.com/admiral-io/admiral-community)
