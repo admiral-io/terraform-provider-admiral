@@ -77,39 +77,42 @@ deps:
 	go mod download
 	go mod tidy
 
-.PHONY: release # Tag and push the next version (auto-detected from commits).
-release:
-	@VERSION=$$($(SVU) next) && \
+# tag_release tags and pushes the version `svu $(1)` names, after a prompt.
+define tag_release
+	@VERSION=$$($(SVU) $(1)) && \
 	echo "Current version: $$($(SVU) current)" && \
 	echo "Next version:    $$VERSION" && \
 	echo "" && \
 	read -p "Proceed? [y/N] " confirm && [ "$$confirm" = "y" ] && \
 	git tag -a $$VERSION -m "Release $$VERSION" && \
 	git push origin $$VERSION
+endef
+
+.PHONY: release-check # Refuse to tag anything but a clean master that matches origin.
+release-check:
+	@branch=$$(git rev-parse --abbrev-ref HEAD); \
+	if [ "$$branch" != master ]; then echo "error: release from master, not $$branch" >&2; exit 1; fi
+	@if [ -n "$$(git status --porcelain --untracked-files=no)" ]; then \
+		echo "error: commit or stash your changes first; a tag names the commit, not the tree" >&2; exit 1; fi
+	@git fetch --quiet --tags origin master
+	@if [ "$$(git rev-parse HEAD)" != "$$(git rev-parse origin/master)" ]; then \
+		echo "error: HEAD is not origin/master; pull or push first" >&2; exit 1; fi
+
+.PHONY: release # Tag and push the next version (auto-detected from commits).
+release: release-check
+	$(call tag_release,next)
 
 .PHONY: release-patch # Tag and push a patch release.
-release-patch:
-	@VERSION=$$($(SVU) patch) && \
-	echo "Current version: $$($(SVU) current)" && \
-	echo "Next version:    $$VERSION" && \
-	git tag -a $$VERSION -m "Release $$VERSION" && \
-	git push origin $$VERSION
+release-patch: release-check
+	$(call tag_release,patch)
 
 .PHONY: release-minor # Tag and push a minor release.
-release-minor:
-	@VERSION=$$($(SVU) minor) && \
-	echo "Current version: $$($(SVU) current)" && \
-	echo "Next version:    $$VERSION" && \
-	git tag -a $$VERSION -m "Release $$VERSION" && \
-	git push origin $$VERSION
+release-minor: release-check
+	$(call tag_release,minor)
 
 .PHONY: release-major # Tag and push a major release.
-release-major:
-	@VERSION=$$($(SVU) major) && \
-	echo "Current version: $$($(SVU) current)" && \
-	echo "Next version:    $$VERSION" && \
-	git tag -a $$VERSION -m "Release $$VERSION" && \
-	git push origin $$VERSION
+release-major: release-check
+	$(call tag_release,major)
 
 .PHONY: version # Show current and next version.
 version:

@@ -22,6 +22,8 @@ on:
     branches: [master]
   push:
     branches: [master]
+  # The release runs it before it publishes.
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -46,7 +48,7 @@ jobs:
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
       - name: Setup Go
-        uses: admiral-io/.github/actions/setup-go@1589001226c237d1f999296213fa524658d97f8f # master
+        uses: admiral-io/.github/actions/setup-go@e7f56271e38fda911667098a4228bb9ea8995c72 # master
         with:
           github-token: ${{ steps.app-token.outputs.token || github.token }}
       - name: Run golangci-lint
@@ -81,7 +83,7 @@ jobs:
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
       - name: Setup Go
-        uses: admiral-io/.github/actions/setup-go@1589001226c237d1f999296213fa524658d97f8f # master
+        uses: admiral-io/.github/actions/setup-go@e7f56271e38fda911667098a4228bb9ea8995c72 # master
         with:
           github-token: ${{ steps.app-token.outputs.token || github.token }}
       - name: Build
@@ -111,7 +113,7 @@ jobs:
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
       - name: Setup Go
-        uses: admiral-io/.github/actions/setup-go@1589001226c237d1f999296213fa524658d97f8f # master
+        uses: admiral-io/.github/actions/setup-go@e7f56271e38fda911667098a4228bb9ea8995c72 # master
         with:
           github-token: ${{ steps.app-token.outputs.token || github.token }}
       - name: Setup Terraform
