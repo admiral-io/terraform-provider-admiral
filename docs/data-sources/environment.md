@@ -3,24 +3,24 @@
 page_title: "admiral_environment Data Source - admiral"
 subcategory: ""
 description: |-
-  Use this data source to read an Admiral environment, either by id or by application_id and name.
+  Use this data source to read an Admiral environment, either by id or by project_id and name.
 ---
 
 # admiral_environment (Data Source)
 
-Use this data source to read an Admiral environment, either by `id` or by `application_id` and `name`.
+Use this data source to read an Admiral environment, either by `id` or by `project_id` and `name`.
 
 ## Example Usage
 
 ```terraform
-# Look up an environment by name within an application
-data "admiral_application" "example" {
-  name = "my-app"
+# Look up an environment by name within a project
+data "admiral_project" "example" {
+  name = "my-project"
 }
 
 data "admiral_environment" "production" {
-  application_id = data.admiral_application.example.id
-  name           = "production"
+  project_id = data.admiral_project.example.id
+  name       = "production"
 }
 
 # Look up an environment by ID
@@ -34,9 +34,9 @@ data "admiral_environment" "by_id" {
 
 ### Optional
 
-- `application_id` (String) The ID of the application the environment belongs to. Required with `name`; names are only unique within an application.
-- `id` (String) The unique identifier of the environment. Either `id`, or both `application_id` and `name`, must be specified.
-- `name` (String) The name of the environment. Requires `application_id`.
+- `id` (String) The unique identifier of the environment. Either `id`, or both `project_id` and `name`, must be specified.
+- `name` (String) The name of the environment. Requires `project_id`.
+- `project_id` (String) The ID of the project the environment belongs to. Required with `name`; names are only unique within a project.
 
 ### Read-Only
 

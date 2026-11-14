@@ -16,63 +16,63 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"go.admiral.io/sdk/client"
-	applicationv1 "go.admiral.io/sdk/proto/admiral/api/application/v1"
+	projectv1 "go.admiral.io/sdk/proto/admiral/api/project/v1"
 )
 
 var (
-	_ resource.Resource                = &applicationResource{}
-	_ resource.ResourceWithConfigure   = &applicationResource{}
-	_ resource.ResourceWithImportState = &applicationResource{}
+	_ resource.Resource                = &projectResource{}
+	_ resource.ResourceWithConfigure   = &projectResource{}
+	_ resource.ResourceWithImportState = &projectResource{}
 )
 
-type applicationResource struct {
+type projectResource struct {
 	client client.AdmiralClient
 }
 
-type applicationResourceModel struct {
+type projectResourceModel struct {
 	ID          types.String `tfsdk:"id"`
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
 	Labels      types.Map    `tfsdk:"labels"`
 }
 
-func NewApplicationResource() resource.Resource {
-	return &applicationResource{}
+func NewProjectResource() resource.Resource {
+	return &projectResource{}
 }
 
-func (r *applicationResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_application"
+func (r *projectResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_project"
 }
 
-func (r *applicationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *projectResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manages an Admiral application. An application is the unit a team owns, and it holds the environments its components are deployed to.",
+		MarkdownDescription: "Manages an Admiral project. A project is the unit a team owns, and it holds the environments its components are deployed to.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The unique identifier of the application.",
+				MarkdownDescription: "The unique identifier of the project.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The name of the application. Must be URL-safe: lowercase alphanumeric and hyphens, 1-63 characters.",
+				MarkdownDescription: "The name of the project. Must be URL-safe: lowercase alphanumeric and hyphens, 1-63 characters.",
 			},
 			"description": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "A description of the application.",
+				MarkdownDescription: "A description of the project.",
 			},
 			"labels": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
-				MarkdownDescription: "Key-value labels for the application.",
+				MarkdownDescription: "Key-value labels for the project.",
 			},
 		},
 	}
 }
 
-func (r *applicationResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *projectResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -89,18 +89,19 @@ func (r *applicationResource) Configure(_ context.Context, req resource.Configur
 	r.client = c
 }
 
-func (r *applicationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan applicationResourceModel
+func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan projectResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Build request
-	createReq := &applicationv1.CreateApplicationRequest{
+	project := &projectv1.Project{
 		Name:        plan.Name.ValueString(),
 		Description: plan.Description.ValueString(),
 	}
+	createReq := &projectv1.CreateProjectRequest{Project: project}
 
 	if !plan.Labels.IsNull() {
 		labels := make(map[string]string)
@@ -108,21 +109,21 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		createReq.Labels = labels
+		project.Labels = labels
 	}
 
 	// Call API
-	result, err := r.client.Application().CreateApplication(ctx, createReq)
+	result, err := r.client.Project().CreateProject(ctx, createReq)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Creating Application",
-			"Could not create application: "+err.Error(),
+			"Error Creating Project",
+			"Could not create project: "+err.Error(),
 		)
 		return
 	}
 
 	// Map response to state
-	r.mapApplicationToState(ctx, result.Application, &plan, &resp.Diagnostics)
+	r.mapProjectToState(ctx, result.Project, &plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -130,15 +131,15 @@ func (r *applicationResource) Create(ctx context.Context, req resource.CreateReq
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state applicationResourceModel
+func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state projectResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	result, err := r.client.Application().GetApplication(ctx, &applicationv1.GetApplicationRequest{
-		ApplicationId: state.ID.ValueString(),
+	result, err := r.client.Project().GetProject(ctx, &projectv1.GetProjectRequest{
+		ProjectId: state.ID.ValueString(),
 	})
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -146,13 +147,13 @@ func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest
 			return
 		}
 		resp.Diagnostics.AddError(
-			"Error Reading Application",
-			"Could not read application ID "+state.ID.ValueString()+": "+err.Error(),
+			"Error Reading Project",
+			"Could not read project ID "+state.ID.ValueString()+": "+err.Error(),
 		)
 		return
 	}
 
-	r.mapApplicationToState(ctx, result.Application, &state, &resp.Diagnostics)
+	r.mapProjectToState(ctx, result.Project, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -160,14 +161,14 @@ func (r *applicationResource) Read(ctx context.Context, req resource.ReadRequest
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (r *applicationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan applicationResourceModel
+func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan projectResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var state applicationResourceModel
+	var state projectResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -176,7 +177,7 @@ func (r *applicationResource) Update(ctx context.Context, req resource.UpdateReq
 	// The plan is the whole desired state, so every mutable field goes in
 	// the mask: a description or labels removed from the configuration is
 	// cleared on the server rather than left as it was.
-	app := &applicationv1.Application{
+	project := &projectv1.Project{
 		Id:          state.ID.ValueString(),
 		Name:        plan.Name.ValueString(),
 		Description: plan.Description.ValueString(),
@@ -188,22 +189,22 @@ func (r *applicationResource) Update(ctx context.Context, req resource.UpdateReq
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		app.Labels = labels
+		project.Labels = labels
 	}
 
-	result, err := r.client.Application().UpdateApplication(ctx, &applicationv1.UpdateApplicationRequest{
-		Application: app,
-		UpdateMask:  &fieldmaskpb.FieldMask{Paths: []string{"name", "description", "labels"}},
+	result, err := r.client.Project().UpdateProject(ctx, &projectv1.UpdateProjectRequest{
+		Project:    project,
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"name", "description", "labels"}},
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Updating Application",
-			"Could not update application: "+err.Error(),
+			"Error Updating Project",
+			"Could not update project: "+err.Error(),
 		)
 		return
 	}
 
-	r.mapApplicationToState(ctx, result.Application, &plan, &resp.Diagnostics)
+	r.mapProjectToState(ctx, result.Project, &plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -211,33 +212,33 @@ func (r *applicationResource) Update(ctx context.Context, req resource.UpdateReq
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (r *applicationResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state applicationResourceModel
+func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state projectResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	_, err := r.client.Application().DeleteApplication(ctx, &applicationv1.DeleteApplicationRequest{
-		ApplicationId: state.ID.ValueString(),
+	_, err := r.client.Project().DeleteProject(ctx, &projectv1.DeleteProjectRequest{
+		ProjectId: state.ID.ValueString(),
 	})
 	if err != nil && status.Code(err) != codes.NotFound {
 		resp.Diagnostics.AddError(
-			"Error Deleting Application",
-			"Could not delete application: "+err.Error(),
+			"Error Deleting Project",
+			"Could not delete project: "+err.Error(),
 		)
 		return
 	}
 }
 
-func (r *applicationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *projectResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func (r *applicationResource) mapApplicationToState(ctx context.Context, app *applicationv1.Application, model *applicationResourceModel, diags *diag.Diagnostics) {
-	model.ID = types.StringValue(app.Id)
-	model.Name = types.StringValue(app.Name)
+func (r *projectResource) mapProjectToState(ctx context.Context, project *projectv1.Project, model *projectResourceModel, diags *diag.Diagnostics) {
+	model.ID = types.StringValue(project.Id)
+	model.Name = types.StringValue(project.Name)
 
-	model.Description = flattenDescription(app.Description, model.Description)
-	model.Labels = flattenLabels(ctx, app.Labels, model.Labels, diags)
+	model.Description = flattenDescription(project.Description, model.Description)
+	model.Labels = flattenLabels(ctx, project.Labels, model.Labels, diags)
 }

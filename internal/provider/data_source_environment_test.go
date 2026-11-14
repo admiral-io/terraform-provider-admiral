@@ -31,7 +31,7 @@ func TestAccEnvironmentDataSource_byID(t *testing.T) {
 				Config: testAccEnvironmentDataSourceConfigByID("test-env-ds-id"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrPair("data.admiral_environment.test", "id", "admiral_environment.test", "id"),
-					resource.TestCheckResourceAttrPair("data.admiral_environment.test", "application_id", "admiral_application.test", "id"),
+					resource.TestCheckResourceAttrPair("data.admiral_environment.test", "project_id", "admiral_project.test", "id"),
 					resource.TestCheckResourceAttr("data.admiral_environment.test", "name", "staging"),
 				),
 			},
@@ -41,32 +41,32 @@ func TestAccEnvironmentDataSource_byID(t *testing.T) {
 
 func testAccEnvironmentDataSourceConfigByName(appName string) string {
 	return fmt.Sprintf(`
-resource "admiral_application" "test" {
+resource "admiral_project" "test" {
   name = %[1]q
 }
 
 resource "admiral_environment" "test" {
-  application_id = admiral_application.test.id
-  name           = "staging"
-  description    = "Looked up by name"
+  project_id  = admiral_project.test.id
+  name        = "staging"
+  description = "Looked up by name"
 }
 
 data "admiral_environment" "test" {
-  application_id = admiral_application.test.id
-  name           = admiral_environment.test.name
+  project_id = admiral_project.test.id
+  name       = admiral_environment.test.name
 }
 `, appName)
 }
 
 func testAccEnvironmentDataSourceConfigByID(appName string) string {
 	return fmt.Sprintf(`
-resource "admiral_application" "test" {
+resource "admiral_project" "test" {
   name = %[1]q
 }
 
 resource "admiral_environment" "test" {
-  application_id = admiral_application.test.id
-  name           = "staging"
+  project_id = admiral_project.test.id
+  name       = "staging"
 }
 
 data "admiral_environment" "test" {

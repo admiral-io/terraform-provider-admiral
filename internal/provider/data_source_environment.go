@@ -25,11 +25,11 @@ type environmentDataSource struct {
 }
 
 type environmentDataSourceModel struct {
-	ID            types.String `tfsdk:"id"`
-	ApplicationID types.String `tfsdk:"application_id"`
-	Name          types.String `tfsdk:"name"`
-	Description   types.String `tfsdk:"description"`
-	Labels        types.Map    `tfsdk:"labels"`
+	ID          types.String `tfsdk:"id"`
+	ProjectID   types.String `tfsdk:"project_id"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	Labels      types.Map    `tfsdk:"labels"`
 }
 
 func NewEnvironmentDataSource() datasource.DataSource {
@@ -42,22 +42,22 @@ func (d *environmentDataSource) Metadata(_ context.Context, req datasource.Metad
 
 func (d *environmentDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Use this data source to read an Admiral environment, either by `id` or by `application_id` and `name`.",
+		MarkdownDescription: "Use this data source to read an Admiral environment, either by `id` or by `project_id` and `name`.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The unique identifier of the environment. Either `id`, or both `application_id` and `name`, must be specified.",
+				MarkdownDescription: "The unique identifier of the environment. Either `id`, or both `project_id` and `name`, must be specified.",
 			},
-			"application_id": schema.StringAttribute{
+			"project_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The ID of the application the environment belongs to. Required with `name`; names are only unique within an application.",
+				MarkdownDescription: "The ID of the project the environment belongs to. Required with `name`; names are only unique within a project.",
 			},
 			"name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The name of the environment. Requires `application_id`.",
+				MarkdownDescription: "The name of the environment. Requires `project_id`.",
 			},
 			"description": schema.StringAttribute{
 				Computed:            true,
@@ -98,20 +98,20 @@ func (d *environmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 	known := func(v types.String) bool { return !v.IsNull() && !v.IsUnknown() }
 	hasID := known(config.ID)
-	hasApp := known(config.ApplicationID)
+	hasProject := known(config.ProjectID)
 	hasName := known(config.Name)
 
 	switch {
-	case hasID && (hasApp || hasName):
+	case hasID && (hasProject || hasName):
 		resp.Diagnostics.AddError(
 			"Conflicting Attributes",
-			"Specify either `id`, or `application_id` and `name`, not both.",
+			"Specify either `id`, or `project_id` and `name`, not both.",
 		)
 		return
-	case !hasID && (!hasApp || !hasName):
+	case !hasID && (!hasProject || !hasName):
 		resp.Diagnostics.AddError(
 			"Missing Attribute",
-			"Specify either `id`, or both `application_id` and `name`.",
+			"Specify either `id`, or both `project_id` and `name`.",
 		)
 		return
 	}
@@ -131,31 +131,27 @@ func (d *environmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 		}
 		env = result.Environment
 	} else {
-		appID := config.ApplicationID.ValueString()
+		projectID := config.ProjectID.ValueString()
 		name := config.Name.ValueString()
 
-		byApp, err := filterEq("application_id", appID)
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(path.Root("application_id"), "Invalid Application ID", err.Error())
-			return
-		}
 		byName, err := filterEq("name", name)
 		if err != nil {
 			resp.Diagnostics.AddAttributeError(path.Root("name"), "Invalid Environment Name", err.Error())
 			return
 		}
 
-		// Names are unique within an application, so with both predicates a
+		// Names are unique within a project, so with both predicates a
 		// second match should not happen; it is still reported rather than
 		// silently picking one.
 		result, err := d.client.Environment().ListEnvironments(ctx, &environmentv1.ListEnvironmentsRequest{
-			Filter:   byApp + " AND " + byName,
-			PageSize: 2,
+			ProjectId: &projectID,
+			Filter:    byName,
+			PageSize:  2,
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error Reading Environment",
-				"Could not find environment "+name+" in application "+appID+": "+err.Error(),
+				"Could not find environment "+name+" in project "+projectID+": "+err.Error(),
 			)
 			return
 		}
@@ -163,7 +159,7 @@ func (d *environmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 		case 0:
 			resp.Diagnostics.AddError(
 				"Environment Not Found",
-				"No environment named "+name+" in application "+appID+".",
+				"No environment named "+name+" in project "+projectID+".",
 			)
 			return
 		case 1:
@@ -176,7 +172,7 @@ func (d *environmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 			resp.Diagnostics.AddAttributeError(
 				path.Root("name"),
 				"Ambiguous Environment Name",
-				fmt.Sprintf("More than one environment is named %q in application %s. Set `id` instead; candidates: %s.", name, appID, strings.Join(ids, ", ")),
+				fmt.Sprintf("More than one environment is named %q in project %s. Set `id` instead; candidates: %s.", name, projectID, strings.Join(ids, ", ")),
 			)
 			return
 		}
@@ -192,7 +188,7 @@ func (d *environmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 func (d *environmentDataSource) mapEnvironmentToState(ctx context.Context, env *environmentv1.Environment, model *environmentDataSourceModel, diags *diag.Diagnostics) {
 	model.ID = types.StringValue(env.Id)
-	model.ApplicationID = types.StringValue(env.ApplicationId)
+	model.ProjectID = types.StringValue(env.ProjectId)
 	model.Name = types.StringValue(env.Name)
 
 	if env.Description != "" {

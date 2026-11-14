@@ -2,13 +2,13 @@
 page_title: "Getting started"
 subcategory: ""
 description: |-
-  Configure the provider, create an application with its environments, and bring existing ones under management.
+  Configure the provider, create a project with its environments, and bring existing ones under management.
 ---
 
 # Getting started
 
-This guide configures the provider, creates an application with three
-environments, and shows how to bring an application created elsewhere under
+This guide configures the provider, creates a project with three
+environments, and shows how to bring a project created elsewhere under
 Terraform.
 
 ## Configure the provider
@@ -35,14 +35,14 @@ terraform {
 provider "admiral" {}
 ```
 
-## Create an application and its environments
+## Create a project and its environments
 
-An application is what a team owns in Admiral. Its environments are where
+A project is what a team owns in Admiral. Its environments are where
 its components are deployed. Create the environments from one list so adding
 one is a one-line change:
 
 ```terraform
-resource "admiral_application" "billing" {
+resource "admiral_project" "billing" {
   name        = "billing-api"
   description = "Handles billing"
 
@@ -54,8 +54,8 @@ resource "admiral_application" "billing" {
 resource "admiral_environment" "billing" {
   for_each = toset(["dev", "staging", "production"])
 
-  application_id = admiral_application.billing.id
-  name           = each.key
+  project_id = admiral_project.billing.id
+  name       = each.key
 }
 ```
 
@@ -63,39 +63,39 @@ Run `terraform plan` to review the changes, then `terraform apply`.
 
 ## Read what another team manages
 
-Use the data sources to refer to an application or environment without
+Use the data sources to refer to a project or environment without
 managing it:
 
 ```terraform
-data "admiral_application" "platform" {
+data "admiral_project" "platform" {
   name = "platform"
 }
 
 data "admiral_environment" "platform_production" {
-  application_id = data.admiral_application.platform.id
-  name           = "production"
+  project_id = data.admiral_project.platform.id
+  name       = "production"
 }
 ```
 
-## Manage an existing application
+## Manage an existing project
 
-An application created in the console or with the CLI can be brought under
+A project created in the console or with the CLI can be brought under
 Terraform with an `import` block (Terraform 1.5 and later). Look
-up its ID with `admiral app get <name> -o wide`, then:
+up its ID with `admiral project get <name> -o wide`, then:
 
 ```terraform
 import {
-  to = admiral_application.billing
-  id = "<application-uuid>"
+  to = admiral_project.billing
+  id = "prj-3k9x2m7qpl0a"
 }
 ```
 
 `terraform plan` shows the import and any difference between the
-configuration and the application as it exists.
+configuration and the project as it exists.
 
 ## Next steps
 
 - The [Admiral documentation](https://admiral.io/docs?utm_source=terraform-registry&utm_medium=referral&utm_campaign=terraform-provider-admiral)
-  explains applications, environments and components.
+  explains projects, environments and components.
 - Report a bug in the provider in its
   [issue tracker](https://github.com/admiral-io/terraform-provider-admiral/issues/new/choose).

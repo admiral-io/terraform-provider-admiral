@@ -1,11 +1,11 @@
-# Look up an environment by name within an application
-data "admiral_application" "example" {
-  name = "my-app"
+# Look up an environment by name within a project
+data "admiral_project" "example" {
+  name = "my-project"
 }
 
 data "admiral_environment" "production" {
-  application_id = data.admiral_application.example.id
-  name           = "production"
+  project_id = data.admiral_project.example.id
+  name       = "production"
 }
 
 # Look up an environment by ID
