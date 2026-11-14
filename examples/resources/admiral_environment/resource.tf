@@ -1,11 +1,11 @@
-resource "admiral_application" "example" {
-  name = "my-app"
+resource "admiral_project" "example" {
+  name = "my-project"
 }
 
 resource "admiral_environment" "production" {
-  application_id = admiral_application.example.id
-  name           = "production"
-  description    = "Customer-facing environment"
+  project_id  = admiral_project.example.id
+  name        = "production"
+  description = "Customer-facing environment"
 
   labels = {
     tier = "critical"

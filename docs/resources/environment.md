@@ -3,24 +3,24 @@
 page_title: "admiral_environment Resource - admiral"
 subcategory: ""
 description: |-
-  Manages an Admiral environment. An environment belongs to an application and is where its components are deployed.
+  Manages an Admiral environment. An environment belongs to a project and is where its components are deployed.
 ---
 
 # admiral_environment (Resource)
 
-Manages an Admiral environment. An environment belongs to an application and is where its components are deployed.
+Manages an Admiral environment. An environment belongs to a project and is where its components are deployed.
 
 ## Example Usage
 
 ```terraform
-resource "admiral_application" "example" {
-  name = "my-app"
+resource "admiral_project" "example" {
+  name = "my-project"
 }
 
 resource "admiral_environment" "production" {
-  application_id = admiral_application.example.id
-  name           = "production"
-  description    = "Customer-facing environment"
+  project_id  = admiral_project.example.id
+  name        = "production"
+  description = "Customer-facing environment"
 
   labels = {
     tier = "critical"
@@ -33,8 +33,8 @@ resource "admiral_environment" "production" {
 
 ### Required
 
-- `application_id` (String) The ID of the application this environment belongs to. Changing it replaces the environment.
-- `name` (String) The name of the environment, unique within the application. Must be URL-safe: lowercase alphanumeric and hyphens, starting with a letter and ending with an alphanumeric character, 1-63 characters.
+- `name` (String) The name of the environment, unique within the project. Must be URL-safe: lowercase alphanumeric and hyphens, starting with a letter and ending with an alphanumeric character, 1-63 characters.
+- `project_id` (String) The ID of the project this environment belongs to. Changing it replaces the environment.
 
 ### Optional
 
@@ -52,5 +52,5 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-terraform import admiral_environment.production '<environment-uuid>'
+terraform import admiral_environment.production 'env-8w2n5r1tqz4c'
 ```

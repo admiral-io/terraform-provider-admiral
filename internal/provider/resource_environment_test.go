@@ -14,10 +14,10 @@ func TestAccEnvironmentResource_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and read.
 			{
-				Config: testAccEnvironmentResourceConfig("test-env-app", "staging", "A test environment"),
+				Config: testAccEnvironmentResourceConfig("test-env-project", "staging", "A test environment"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("admiral_environment.test", "id"),
-					resource.TestCheckResourceAttrPair("admiral_environment.test", "application_id", "admiral_application.test", "id"),
+					resource.TestCheckResourceAttrPair("admiral_environment.test", "project_id", "admiral_project.test", "id"),
 					resource.TestCheckResourceAttr("admiral_environment.test", "name", "staging"),
 					resource.TestCheckResourceAttr("admiral_environment.test", "description", "A test environment"),
 				),
@@ -38,14 +38,14 @@ func TestAccEnvironmentResource_update(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create.
 			{
-				Config: testAccEnvironmentResourceConfig("test-env-app-update", "staging", "Initial description"),
+				Config: testAccEnvironmentResourceConfig("test-env-project-update", "staging", "Initial description"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("admiral_environment.test", "description", "Initial description"),
 				),
 			},
 			// Update description and rename in place: the ID must survive.
 			{
-				Config: testAccEnvironmentResourceConfig("test-env-app-update", "staging-2", "Updated description"),
+				Config: testAccEnvironmentResourceConfig("test-env-project-update", "staging-2", "Updated description"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("admiral_environment.test", "name", "staging-2"),
 					resource.TestCheckResourceAttr("admiral_environment.test", "description", "Updated description"),
@@ -58,7 +58,7 @@ func TestAccEnvironmentResource_update(t *testing.T) {
 			},
 			// Drop the description: it must be cleared, not kept.
 			{
-				Config: testAccEnvironmentResourceConfig("test-env-app-update", "staging-2", ""),
+				Config: testAccEnvironmentResourceConfig("test-env-project-update", "staging-2", ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckNoResourceAttr("admiral_environment.test", "description"),
 				),
@@ -72,7 +72,7 @@ func TestAccEnvironmentResource_labels(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEnvironmentResourceConfigWithLabels("test-env-app-labels", "staging", map[string]string{
+				Config: testAccEnvironmentResourceConfigWithLabels("test-env-project-labels", "staging", map[string]string{
 					"tier": "critical",
 					"team": "platform",
 				}),
@@ -82,7 +82,7 @@ func TestAccEnvironmentResource_labels(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccEnvironmentResourceConfigWithLabels("test-env-app-labels", "staging", map[string]string{
+				Config: testAccEnvironmentResourceConfigWithLabels("test-env-project-labels", "staging", map[string]string{
 					"tier": "standard",
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -91,7 +91,7 @@ func TestAccEnvironmentResource_labels(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccEnvironmentResourceConfig("test-env-app-labels", "staging", ""),
+				Config: testAccEnvironmentResourceConfig("test-env-project-labels", "staging", ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckNoResourceAttr("admiral_environment.test", "labels.%"),
 				),
@@ -100,13 +100,13 @@ func TestAccEnvironmentResource_labels(t *testing.T) {
 	})
 }
 
-// See TestAccApplicationResource_emptyValues.
+// See TestAccProjectResource_emptyValues.
 func TestAccEnvironmentResource_emptyValues(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEnvironmentResourceConfigEmptyValues("test-app-env-empty", "staging"),
+				Config: testAccEnvironmentResourceConfigEmptyValues("test-project-env-empty", "staging"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("admiral_environment.test", "description", ""),
 					resource.TestCheckResourceAttr("admiral_environment.test", "labels.%", "0"),
@@ -114,10 +114,10 @@ func TestAccEnvironmentResource_emptyValues(t *testing.T) {
 			},
 			// Update into the empty shape from a populated one.
 			{
-				Config: testAccEnvironmentResourceConfigWithLabels("test-app-env-empty", "staging", map[string]string{"env": "staging"}),
+				Config: testAccEnvironmentResourceConfigWithLabels("test-project-env-empty", "staging", map[string]string{"env": "staging"}),
 			},
 			{
-				Config: testAccEnvironmentResourceConfigEmptyValues("test-app-env-empty", "staging"),
+				Config: testAccEnvironmentResourceConfigEmptyValues("test-project-env-empty", "staging"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("admiral_environment.test", "description", ""),
 					resource.TestCheckResourceAttr("admiral_environment.test", "labels.%", "0"),
@@ -130,17 +130,17 @@ func TestAccEnvironmentResource_emptyValues(t *testing.T) {
 func testAccEnvironmentResourceConfig(appName, envName, description string) string {
 	desc := ""
 	if description != "" {
-		desc = fmt.Sprintf("  description    = %q\n", description)
+		desc = fmt.Sprintf("  description = %q\n", description)
 	}
 
 	return fmt.Sprintf(`
-resource "admiral_application" "test" {
+resource "admiral_project" "test" {
   name = %[1]q
 }
 
 resource "admiral_environment" "test" {
-  application_id = admiral_application.test.id
-  name           = %[2]q
+  project_id = admiral_project.test.id
+  name       = %[2]q
 %[3]s}
 `, appName, envName, desc)
 }
@@ -152,13 +152,13 @@ func testAccEnvironmentResourceConfigWithLabels(appName, envName string, labels 
 	}
 
 	return fmt.Sprintf(`
-resource "admiral_application" "test" {
+resource "admiral_project" "test" {
   name = %[1]q
 }
 
 resource "admiral_environment" "test" {
-  application_id = admiral_application.test.id
-  name           = %[2]q
+  project_id = admiral_project.test.id
+  name       = %[2]q
   labels = {
 %[3]s  }
 }
@@ -167,14 +167,14 @@ resource "admiral_environment" "test" {
 
 func testAccEnvironmentResourceConfigEmptyValues(appName, envName string) string {
 	return fmt.Sprintf(`
-resource "admiral_application" "test" {
+resource "admiral_project" "test" {
   name = %[1]q
 }
 
 resource "admiral_environment" "test" {
-  application_id = admiral_application.test.id
-  name           = %[2]q
-  description    = ""
+  project_id  = admiral_project.test.id
+  name        = %[2]q
+  description = ""
   labels         = {}
 }
 `, appName, envName)

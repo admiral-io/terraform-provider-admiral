@@ -1,0 +1,1 @@
+terraform import admiral_project.example 'prj-3k9x2m7qpl0a'

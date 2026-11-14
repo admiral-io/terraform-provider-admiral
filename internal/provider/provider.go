@@ -189,14 +189,14 @@ func (p *admiralProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 func (p *admiralProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewApplicationResource,
+		NewProjectResource,
 		NewEnvironmentResource,
 	}
 }
 
 func (p *admiralProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewApplicationDataSource,
+		NewProjectDataSource,
 		NewEnvironmentDataSource,
 	}
 }

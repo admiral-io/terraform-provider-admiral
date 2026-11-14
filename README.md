@@ -24,9 +24,9 @@ provider "admiral" {
   # api_key = "admp_..."            # or set ADMIRAL_API_KEY (recommended)
 }
 
-resource "admiral_application" "my_app" {
-  name        = "my-app"
-  description = "My application"
+resource "admiral_project" "my_project" {
+  name        = "my-project"
+  description = "My project"
 
   labels = {
     team = "platform"
@@ -34,12 +34,12 @@ resource "admiral_application" "my_app" {
 }
 
 resource "admiral_environment" "production" {
-  application_id = admiral_application.my_app.id
-  name           = "production"
+  project_id = admiral_project.my_project.id
+  name       = "production"
 }
 
-data "admiral_application" "other_app" {
-  name = "other-app"
+data "admiral_project" "other_project" {
+  name = "other-project"
 }
 ```
 

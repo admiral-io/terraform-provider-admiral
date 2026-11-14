@@ -12,61 +12,61 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"go.admiral.io/sdk/client"
-	applicationv1 "go.admiral.io/sdk/proto/admiral/api/application/v1"
+	projectv1 "go.admiral.io/sdk/proto/admiral/api/project/v1"
 )
 
 var (
-	_ datasource.DataSource              = &applicationDataSource{}
-	_ datasource.DataSourceWithConfigure = &applicationDataSource{}
+	_ datasource.DataSource              = &projectDataSource{}
+	_ datasource.DataSourceWithConfigure = &projectDataSource{}
 )
 
-type applicationDataSource struct {
+type projectDataSource struct {
 	client client.AdmiralClient
 }
 
-type applicationDataSourceModel struct {
+type projectDataSourceModel struct {
 	ID          types.String `tfsdk:"id"`
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
 	Labels      types.Map    `tfsdk:"labels"`
 }
 
-func NewApplicationDataSource() datasource.DataSource {
-	return &applicationDataSource{}
+func NewProjectDataSource() datasource.DataSource {
+	return &projectDataSource{}
 }
 
-func (d *applicationDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_application"
+func (d *projectDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_project"
 }
 
-func (d *applicationDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *projectDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Use this data source to read an Admiral application.",
+		MarkdownDescription: "Use this data source to read an Admiral project.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The unique identifier of the application. Exactly one of `id` or `name` must be specified.",
+				MarkdownDescription: "The unique identifier of the project. Exactly one of `id` or `name` must be specified.",
 			},
 			"name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The name of the application. Exactly one of `id` or `name` must be specified.",
+				MarkdownDescription: "The name of the project. Exactly one of `id` or `name` must be specified.",
 			},
 			"description": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "A description of the application.",
+				MarkdownDescription: "A description of the project.",
 			},
 			"labels": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Computed:            true,
-				MarkdownDescription: "Key-value labels for the application.",
+				MarkdownDescription: "Key-value labels for the project.",
 			},
 		},
 	}
 }
 
-func (d *applicationDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *projectDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -83,8 +83,8 @@ func (d *applicationDataSource) Configure(_ context.Context, req datasource.Conf
 	d.client = c
 }
 
-func (d *applicationDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var config applicationDataSourceModel
+func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var config projectDataSourceModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -109,27 +109,27 @@ func (d *applicationDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	var app *applicationv1.Application
+	var project *projectv1.Project
 
 	if hasID {
-		result, err := d.client.Application().GetApplication(ctx, &applicationv1.GetApplicationRequest{
-			ApplicationId: config.ID.ValueString(),
+		result, err := d.client.Project().GetProject(ctx, &projectv1.GetProjectRequest{
+			ProjectId: config.ID.ValueString(),
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(
-				"Error Reading Application",
-				"Could not read application ID "+config.ID.ValueString()+": "+err.Error(),
+				"Error Reading Project",
+				"Could not read project ID "+config.ID.ValueString()+": "+err.Error(),
 			)
 			return
 		}
-		app = result.Application
+		project = result.Project
 	} else {
 		name := config.Name.ValueString()
 		filter, err := filterEq("name", name)
 		if err != nil {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("name"),
-				"Invalid Application Name",
+				"Invalid Project Name",
 				err.Error(),
 			)
 			return
@@ -137,41 +137,41 @@ func (d *applicationDataSource) Read(ctx context.Context, req datasource.ReadReq
 
 		// Names are not unique server-side, so ask for two: a second match
 		// means the lookup is ambiguous and the caller must pass an ID.
-		result, err := d.client.Application().ListApplications(ctx, &applicationv1.ListApplicationsRequest{
+		result, err := d.client.Project().ListProjects(ctx, &projectv1.ListProjectsRequest{
 			Filter:   filter,
 			PageSize: 2,
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(
-				"Error Reading Application",
-				"Could not find application with name "+name+": "+err.Error(),
+				"Error Reading Project",
+				"Could not find project with name "+name+": "+err.Error(),
 			)
 			return
 		}
-		switch len(result.Applications) {
+		switch len(result.Projects) {
 		case 0:
 			resp.Diagnostics.AddError(
-				"Application Not Found",
-				"No application found with name "+name+".",
+				"Project Not Found",
+				"No project found with name "+name+".",
 			)
 			return
 		case 1:
-			app = result.Applications[0]
+			project = result.Projects[0]
 		default:
-			ids := make([]string, 0, len(result.Applications))
-			for _, a := range result.Applications {
-				ids = append(ids, a.Id)
+			ids := make([]string, 0, len(result.Projects))
+			for _, p := range result.Projects {
+				ids = append(ids, p.Id)
 			}
 			resp.Diagnostics.AddAttributeError(
 				path.Root("name"),
-				"Ambiguous Application Name",
-				fmt.Sprintf("More than one application is named %q. Set `id` instead; candidates: %s.", name, strings.Join(ids, ", ")),
+				"Ambiguous Project Name",
+				fmt.Sprintf("More than one project is named %q. Set `id` instead; candidates: %s.", name, strings.Join(ids, ", ")),
 			)
 			return
 		}
 	}
 
-	d.mapApplicationToState(ctx, app, &config, &resp.Diagnostics)
+	d.mapProjectToState(ctx, project, &config, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -179,18 +179,18 @@ func (d *applicationDataSource) Read(ctx context.Context, req datasource.ReadReq
 	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
 }
 
-func (d *applicationDataSource) mapApplicationToState(ctx context.Context, app *applicationv1.Application, model *applicationDataSourceModel, diags *diag.Diagnostics) {
-	model.ID = types.StringValue(app.Id)
-	model.Name = types.StringValue(app.Name)
+func (d *projectDataSource) mapProjectToState(ctx context.Context, project *projectv1.Project, model *projectDataSourceModel, diags *diag.Diagnostics) {
+	model.ID = types.StringValue(project.Id)
+	model.Name = types.StringValue(project.Name)
 
-	if app.Description != "" {
-		model.Description = types.StringValue(app.Description)
+	if project.Description != "" {
+		model.Description = types.StringValue(project.Description)
 	} else {
 		model.Description = types.StringNull()
 	}
 
-	if len(app.Labels) > 0 {
-		labelsMap, d := types.MapValueFrom(ctx, types.StringType, app.Labels)
+	if len(project.Labels) > 0 {
+		labelsMap, d := types.MapValueFrom(ctx, types.StringType, project.Labels)
 		diags.Append(d...)
 		model.Labels = labelsMap
 	} else {

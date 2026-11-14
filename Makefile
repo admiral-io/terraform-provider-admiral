@@ -37,7 +37,7 @@ test-verbose:
 	go test -v -race -covermode=atomic ./...
 
 # Acceptance tests run against a real Admiral API and need ADMIRAL_API_KEY.
-# They create and delete applications in that tenant.
+# They create and delete projects in that organization.
 .PHONY: testacc # Run acceptance tests (needs ADMIRAL_API_KEY).
 testacc:
 	TF_ACC=1 go test -race -covermode=atomic -timeout 120m -v ./...

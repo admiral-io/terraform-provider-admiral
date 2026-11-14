@@ -30,11 +30,11 @@ type environmentResource struct {
 }
 
 type environmentResourceModel struct {
-	ID            types.String `tfsdk:"id"`
-	ApplicationID types.String `tfsdk:"application_id"`
-	Name          types.String `tfsdk:"name"`
-	Description   types.String `tfsdk:"description"`
-	Labels        types.Map    `tfsdk:"labels"`
+	ID          types.String `tfsdk:"id"`
+	ProjectID   types.String `tfsdk:"project_id"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	Labels      types.Map    `tfsdk:"labels"`
 }
 
 func NewEnvironmentResource() resource.Resource {
@@ -47,7 +47,7 @@ func (r *environmentResource) Metadata(_ context.Context, req resource.MetadataR
 
 func (r *environmentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manages an Admiral environment. An environment belongs to an application and is where its components are deployed.",
+		MarkdownDescription: "Manages an Admiral environment. An environment belongs to a project and is where its components are deployed.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -56,16 +56,16 @@ func (r *environmentResource) Schema(_ context.Context, _ resource.SchemaRequest
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"application_id": schema.StringAttribute{
+			"project_id": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The ID of the application this environment belongs to. Changing it replaces the environment.",
+				MarkdownDescription: "The ID of the project this environment belongs to. Changing it replaces the environment.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The name of the environment, unique within the application. Must be URL-safe: lowercase alphanumeric and hyphens, starting with a letter and ending with an alphanumeric character, 1-63 characters.",
+				MarkdownDescription: "The name of the environment, unique within the project. Must be URL-safe: lowercase alphanumeric and hyphens, starting with a letter and ending with an alphanumeric character, 1-63 characters.",
 			},
 			"description": schema.StringAttribute{
 				Optional:            true,
@@ -104,10 +104,13 @@ func (r *environmentResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
+	env := &environmentv1.Environment{
+		Name:        plan.Name.ValueString(),
+		Description: plan.Description.ValueString(),
+	}
 	createReq := &environmentv1.CreateEnvironmentRequest{
-		ApplicationId: plan.ApplicationID.ValueString(),
-		Name:          plan.Name.ValueString(),
-		Description:   plan.Description.ValueString(),
+		ProjectId:   plan.ProjectID.ValueString(),
+		Environment: env,
 	}
 
 	if !plan.Labels.IsNull() {
@@ -116,7 +119,7 @@ func (r *environmentResource) Create(ctx context.Context, req resource.CreateReq
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		createReq.Labels = labels
+		env.Labels = labels
 	}
 
 	result, err := r.client.Environment().CreateEnvironment(ctx, createReq)
@@ -183,10 +186,10 @@ func (r *environmentResource) Update(ctx context.Context, req resource.UpdateReq
 	// the mask: a description or labels removed from the configuration is
 	// cleared on the server rather than left as it was.
 	env := &environmentv1.Environment{
-		Id:            state.ID.ValueString(),
-		ApplicationId: state.ApplicationID.ValueString(),
-		Name:          plan.Name.ValueString(),
-		Description:   plan.Description.ValueString(),
+		Id:          state.ID.ValueString(),
+		ProjectId:   state.ProjectID.ValueString(),
+		Name:        plan.Name.ValueString(),
+		Description: plan.Description.ValueString(),
 	}
 
 	if !plan.Labels.IsNull() {
@@ -243,7 +246,7 @@ func (r *environmentResource) ImportState(ctx context.Context, req resource.Impo
 
 func (r *environmentResource) mapEnvironmentToState(ctx context.Context, env *environmentv1.Environment, model *environmentResourceModel, diags *diag.Diagnostics) {
 	model.ID = types.StringValue(env.Id)
-	model.ApplicationID = types.StringValue(env.ApplicationId)
+	model.ProjectID = types.StringValue(env.ProjectId)
 	model.Name = types.StringValue(env.Name)
 
 	model.Description = flattenDescription(env.Description, model.Description)

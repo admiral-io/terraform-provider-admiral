@@ -2,7 +2,7 @@
 page_title: "Admiral Provider"
 subcategory: ""
 description: |-
-  Manage Admiral applications and environments as code.
+  Manage Admiral projects and environments as code.
 ---
 
 # Admiral Provider
@@ -14,7 +14,7 @@ Kubernetes manifests you already have and keeps the dependency graph across
 them.
 
 Use this provider to manage the Admiral side of that setup as code: the
-applications your teams own and the environments each one deploys to, such as
+projects your teams own and the environments each one deploys to, such as
 `dev`, `staging` and `production`.
 
 New to the provider? Start with the

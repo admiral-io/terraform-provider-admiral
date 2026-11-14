@@ -11,7 +11,7 @@ func TestFilterEq(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{name: "plain", value: "my-app", want: "field['name'] = 'my-app'"},
+		{name: "plain", value: "my-project", want: "field['name'] = 'my-project'"},
 		{name: "embedded quote is escaped", value: "o'brien", want: `field['name'] = 'o\'brien'`},
 		{name: "quote breakout is neutralized", value: "x' OR field['name'] = 'y", want: `field['name'] = 'x\' OR field[\'name\'] = \'y'`},
 		{name: "trailing backslash is rejected", value: `bad\`, wantErr: true},
