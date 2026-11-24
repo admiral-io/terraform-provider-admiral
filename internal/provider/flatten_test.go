@@ -62,10 +62,12 @@ func TestFlattenLabels(t *testing.T) {
 			t.Parallel()
 
 			var diags diag.Diagnostics
+
 			got := flattenLabels(context.Background(), tt.labels, tt.prior, &diags)
 			if diags.HasError() {
 				t.Fatalf("flattenLabels returned diagnostics: %v", diags)
 			}
+
 			if !got.Equal(tt.want) {
 				t.Fatalf("flattenLabels(%v, %v) = %v, want %v", tt.labels, tt.prior, got, tt.want)
 			}

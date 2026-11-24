@@ -17,6 +17,7 @@ func filterQuote(v string) (string, error) {
 	if strings.HasSuffix(v, `\`) {
 		return "", fmt.Errorf("value %q cannot be used in a filter: it ends with a backslash", v)
 	}
+
 	return "'" + strings.ReplaceAll(v, "'", `\'`) + "'", nil
 }
 
@@ -26,9 +27,11 @@ func filterEq(field, value string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	v, err := filterQuote(value)
 	if err != nil {
 		return "", err
 	}
+
 	return "field[" + f + "] = " + v, nil
 }

@@ -26,11 +26,14 @@ func TestFilterEq(t *testing.T) {
 				if err == nil {
 					t.Fatalf("filterEq(%q) = %q, want error", tt.value, got)
 				}
+
 				return
 			}
+
 			if err != nil {
 				t.Fatalf("filterEq(%q) unexpected error: %v", tt.value, err)
 			}
+
 			if got != tt.want {
 				t.Fatalf("filterEq(%q) = %q, want %q", tt.value, got, tt.want)
 			}

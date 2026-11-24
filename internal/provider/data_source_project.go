@@ -77,6 +77,7 @@ func (d *projectDataSource) Configure(_ context.Context, req datasource.Configur
 			"Unexpected Data Source Configure Type",
 			fmt.Sprintf("Expected *client.Client, got: %T.", req.ProviderData),
 		)
+
 		return
 	}
 
@@ -86,6 +87,7 @@ func (d *projectDataSource) Configure(_ context.Context, req datasource.Configur
 func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var config projectDataSourceModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -99,13 +101,16 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 			"Missing Attribute",
 			"Exactly one of `id` or `name` must be specified.",
 		)
+
 		return
 	}
+
 	if hasID && hasName {
 		resp.Diagnostics.AddError(
 			"Conflicting Attributes",
 			"Only one of `id` or `name` may be specified, not both.",
 		)
+
 		return
 	}
 
@@ -120,11 +125,14 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 				"Error Reading Project",
 				"Could not read project ID "+config.ID.ValueString()+": "+err.Error(),
 			)
+
 			return
 		}
+
 		project = result.Project
 	} else {
 		name := config.Name.ValueString()
+
 		filter, err := filterEq("name", name)
 		if err != nil {
 			resp.Diagnostics.AddAttributeError(
@@ -132,6 +140,7 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 				"Invalid Project Name",
 				err.Error(),
 			)
+
 			return
 		}
 
@@ -146,14 +155,17 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 				"Error Reading Project",
 				"Could not find project with name "+name+": "+err.Error(),
 			)
+
 			return
 		}
+
 		switch len(result.Projects) {
 		case 0:
 			resp.Diagnostics.AddError(
 				"Project Not Found",
 				"No project found with name "+name+".",
 			)
+
 			return
 		case 1:
 			project = result.Projects[0]
@@ -162,16 +174,19 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 			for _, p := range result.Projects {
 				ids = append(ids, p.Id)
 			}
+
 			resp.Diagnostics.AddAttributeError(
 				path.Root("name"),
 				"Ambiguous Project Name",
 				fmt.Sprintf("More than one project is named %q. Set `id` instead; candidates: %s.", name, strings.Join(ids, ", ")),
 			)
+
 			return
 		}
 	}
 
 	d.mapProjectToState(ctx, project, &config, &resp.Diagnostics)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -192,6 +207,7 @@ func (d *projectDataSource) mapProjectToState(ctx context.Context, project *proj
 	if len(project.Labels) > 0 {
 		labelsMap, d := types.MapValueFrom(ctx, types.StringType, project.Labels)
 		diags.Append(d...)
+
 		model.Labels = labelsMap
 	} else {
 		model.Labels = types.MapNull(types.StringType)
