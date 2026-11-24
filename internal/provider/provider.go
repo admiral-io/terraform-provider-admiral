@@ -84,6 +84,7 @@ func (p *admiralProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 func (p *admiralProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var config admiralProviderModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -97,6 +98,7 @@ func (p *admiralProvider) Configure(ctx context.Context, req provider.ConfigureR
 				"Either target apply the source of the value first, set the value statically in the configuration, or use the "+envServer+" environment variable.",
 		)
 	}
+
 	if config.APIKey.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("api_key"),
@@ -105,6 +107,7 @@ func (p *admiralProvider) Configure(ctx context.Context, req provider.ConfigureR
 				"Either target apply the source of the value first, set the value statically in the configuration, or use the "+envAPIKey+" environment variable.",
 		)
 	}
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -134,6 +137,7 @@ func (p *admiralProvider) Configure(ctx context.Context, req provider.ConfigureR
 			"Missing Admiral API Key",
 			"The provider requires an Admiral API key. Set the `api_key` attribute in the provider block or the "+envAPIKey+" environment variable.",
 		)
+
 		return
 	}
 
@@ -144,6 +148,7 @@ func (p *admiralProvider) Configure(ctx context.Context, req provider.ConfigureR
 			"Invalid Admiral API Key",
 			"The API key is not in the expected format: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -180,6 +185,7 @@ func (p *admiralProvider) Configure(ctx context.Context, req provider.ConfigureR
 			"Unable to Create Admiral Client",
 			"An unexpected error occurred when creating the Admiral API client: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -207,9 +213,11 @@ func deadlineInterceptor(timeout time.Duration) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		if _, has := ctx.Deadline(); !has && timeout > 0 {
 			var cancel context.CancelFunc
+
 			ctx, cancel = context.WithTimeout(ctx, timeout)
 			defer cancel()
 		}
+
 		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }

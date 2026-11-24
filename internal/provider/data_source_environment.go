@@ -83,6 +83,7 @@ func (d *environmentDataSource) Configure(_ context.Context, req datasource.Conf
 			"Unexpected Data Source Configure Type",
 			fmt.Sprintf("Expected *client.Client, got: %T.", req.ProviderData),
 		)
+
 		return
 	}
 
@@ -92,6 +93,7 @@ func (d *environmentDataSource) Configure(_ context.Context, req datasource.Conf
 func (d *environmentDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var config environmentDataSourceModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -107,12 +109,14 @@ func (d *environmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 			"Conflicting Attributes",
 			"Specify either `id`, or `project_id` and `name`, not both.",
 		)
+
 		return
 	case !hasID && (!hasProject || !hasName):
 		resp.Diagnostics.AddError(
 			"Missing Attribute",
 			"Specify either `id`, or both `project_id` and `name`.",
 		)
+
 		return
 	}
 
@@ -127,8 +131,10 @@ func (d *environmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 				"Error Reading Environment",
 				"Could not read environment ID "+config.ID.ValueString()+": "+err.Error(),
 			)
+
 			return
 		}
+
 		env = result.Environment
 	} else {
 		projectID := config.ProjectID.ValueString()
@@ -153,14 +159,17 @@ func (d *environmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 				"Error Reading Environment",
 				"Could not find environment "+name+" in project "+projectID+": "+err.Error(),
 			)
+
 			return
 		}
+
 		switch len(result.Environments) {
 		case 0:
 			resp.Diagnostics.AddError(
 				"Environment Not Found",
 				"No environment named "+name+" in project "+projectID+".",
 			)
+
 			return
 		case 1:
 			env = result.Environments[0]
@@ -169,16 +178,19 @@ func (d *environmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 			for _, e := range result.Environments {
 				ids = append(ids, e.Id)
 			}
+
 			resp.Diagnostics.AddAttributeError(
 				path.Root("name"),
 				"Ambiguous Environment Name",
 				fmt.Sprintf("More than one environment is named %q in project %s. Set `id` instead; candidates: %s.", name, projectID, strings.Join(ids, ", ")),
 			)
+
 			return
 		}
 	}
 
 	d.mapEnvironmentToState(ctx, env, &config, &resp.Diagnostics)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -200,6 +212,7 @@ func (d *environmentDataSource) mapEnvironmentToState(ctx context.Context, env *
 	if len(env.Labels) > 0 {
 		labelsMap, d := types.MapValueFrom(ctx, types.StringType, env.Labels)
 		diags.Append(d...)
+
 		model.Labels = labelsMap
 	} else {
 		model.Labels = types.MapNull(types.StringType)

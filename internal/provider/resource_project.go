@@ -83,6 +83,7 @@ func (r *projectResource) Configure(_ context.Context, req resource.ConfigureReq
 			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *client.Client, got: %T.", req.ProviderData),
 		)
+
 		return
 	}
 
@@ -92,6 +93,7 @@ func (r *projectResource) Configure(_ context.Context, req resource.ConfigureReq
 func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan projectResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -106,9 +108,11 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 	if !plan.Labels.IsNull() {
 		labels := make(map[string]string)
 		resp.Diagnostics.Append(plan.Labels.ElementsAs(ctx, &labels, false)...)
+
 		if resp.Diagnostics.HasError() {
 			return
 		}
+
 		project.Labels = labels
 	}
 
@@ -119,11 +123,13 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 			"Error Creating Project",
 			"Could not create project: "+err.Error(),
 		)
+
 		return
 	}
 
 	// Map response to state
 	r.mapProjectToState(ctx, result.Project, &plan, &resp.Diagnostics)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -134,6 +140,7 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state projectResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -146,14 +153,17 @@ func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, re
 			resp.State.RemoveResource(ctx)
 			return
 		}
+
 		resp.Diagnostics.AddError(
 			"Error Reading Project",
 			"Could not read project ID "+state.ID.ValueString()+": "+err.Error(),
 		)
+
 		return
 	}
 
 	r.mapProjectToState(ctx, result.Project, &state, &resp.Diagnostics)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -164,12 +174,14 @@ func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, re
 func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan projectResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	var state projectResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -186,9 +198,11 @@ func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest
 	if !plan.Labels.IsNull() {
 		labels := make(map[string]string)
 		resp.Diagnostics.Append(plan.Labels.ElementsAs(ctx, &labels, false)...)
+
 		if resp.Diagnostics.HasError() {
 			return
 		}
+
 		project.Labels = labels
 	}
 
@@ -201,10 +215,12 @@ func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest
 			"Error Updating Project",
 			"Could not update project: "+err.Error(),
 		)
+
 		return
 	}
 
 	r.mapProjectToState(ctx, result.Project, &plan, &resp.Diagnostics)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -215,6 +231,7 @@ func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest
 func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state projectResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -227,6 +244,7 @@ func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest
 			"Error Deleting Project",
 			"Could not delete project: "+err.Error(),
 		)
+
 		return
 	}
 }

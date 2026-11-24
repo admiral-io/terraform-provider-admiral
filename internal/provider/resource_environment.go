@@ -91,6 +91,7 @@ func (r *environmentResource) Configure(_ context.Context, req resource.Configur
 			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *client.Client, got: %T.", req.ProviderData),
 		)
+
 		return
 	}
 
@@ -100,6 +101,7 @@ func (r *environmentResource) Configure(_ context.Context, req resource.Configur
 func (r *environmentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan environmentResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -116,9 +118,11 @@ func (r *environmentResource) Create(ctx context.Context, req resource.CreateReq
 	if !plan.Labels.IsNull() {
 		labels := make(map[string]string)
 		resp.Diagnostics.Append(plan.Labels.ElementsAs(ctx, &labels, false)...)
+
 		if resp.Diagnostics.HasError() {
 			return
 		}
+
 		env.Labels = labels
 	}
 
@@ -128,10 +132,12 @@ func (r *environmentResource) Create(ctx context.Context, req resource.CreateReq
 			"Error Creating Environment",
 			"Could not create environment: "+err.Error(),
 		)
+
 		return
 	}
 
 	r.mapEnvironmentToState(ctx, result.Environment, &plan, &resp.Diagnostics)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -142,6 +148,7 @@ func (r *environmentResource) Create(ctx context.Context, req resource.CreateReq
 func (r *environmentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state environmentResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -154,14 +161,17 @@ func (r *environmentResource) Read(ctx context.Context, req resource.ReadRequest
 			resp.State.RemoveResource(ctx)
 			return
 		}
+
 		resp.Diagnostics.AddError(
 			"Error Reading Environment",
 			"Could not read environment ID "+state.ID.ValueString()+": "+err.Error(),
 		)
+
 		return
 	}
 
 	r.mapEnvironmentToState(ctx, result.Environment, &state, &resp.Diagnostics)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -172,12 +182,14 @@ func (r *environmentResource) Read(ctx context.Context, req resource.ReadRequest
 func (r *environmentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan environmentResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	var state environmentResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -195,9 +207,11 @@ func (r *environmentResource) Update(ctx context.Context, req resource.UpdateReq
 	if !plan.Labels.IsNull() {
 		labels := make(map[string]string)
 		resp.Diagnostics.Append(plan.Labels.ElementsAs(ctx, &labels, false)...)
+
 		if resp.Diagnostics.HasError() {
 			return
 		}
+
 		env.Labels = labels
 	}
 
@@ -210,10 +224,12 @@ func (r *environmentResource) Update(ctx context.Context, req resource.UpdateReq
 			"Error Updating Environment",
 			"Could not update environment: "+err.Error(),
 		)
+
 		return
 	}
 
 	r.mapEnvironmentToState(ctx, result.Environment, &plan, &resp.Diagnostics)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -224,6 +240,7 @@ func (r *environmentResource) Update(ctx context.Context, req resource.UpdateReq
 func (r *environmentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state environmentResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -236,6 +253,7 @@ func (r *environmentResource) Delete(ctx context.Context, req resource.DeleteReq
 			"Error Deleting Environment",
 			"Could not delete environment: "+err.Error(),
 		)
+
 		return
 	}
 }

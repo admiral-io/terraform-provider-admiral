@@ -18,9 +18,11 @@ func flattenDescription(description string, prior types.String) types.String {
 	if description != "" {
 		return types.StringValue(description)
 	}
+
 	if !prior.IsNull() && !prior.IsUnknown() && prior.ValueString() == "" {
 		return prior
 	}
+
 	return types.StringNull()
 }
 
@@ -28,10 +30,13 @@ func flattenLabels(ctx context.Context, labels map[string]string, prior types.Ma
 	if len(labels) > 0 {
 		m, d := types.MapValueFrom(ctx, types.StringType, labels)
 		diags.Append(d...)
+
 		return m
 	}
+
 	if !prior.IsNull() && !prior.IsUnknown() && len(prior.Elements()) == 0 {
 		return prior
 	}
+
 	return types.MapNull(types.StringType)
 }
