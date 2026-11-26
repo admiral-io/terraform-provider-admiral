@@ -5,7 +5,7 @@ go 1.26.4
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-testing v1.16.0
-	go.admiral.io/sdk v1.65.0
+	go.admiral.io/sdk v1.66.0
 )
 
 require (
